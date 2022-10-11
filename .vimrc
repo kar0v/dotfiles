@@ -166,8 +166,8 @@ noremap <c-right> <c-w><
 " Map the F3 key to toggle NERDTree open and close.
 nnoremap <F3> :NERDTreeToggle<cr>
 " Start with NerdTree
-autocmd VimEnter * NERDTree
-autocmd VimEnter * wincmd p
+""autocmd VimEnter * NERDTree
+""autocmd VimEnter * wincmd p
 " Have nerdtree ignore certain files and directories.
 let NERDTreeIgnore=['\.git$', '\.jpg$', '\.mp4$', '\.ogg$', '\.iso$', '\.pdf$', '\.pyc$', '\.odt$', '\.png$', '\.gif$', '\.db$']
 
