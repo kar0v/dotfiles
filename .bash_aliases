@@ -39,9 +39,9 @@ alias mkdir='mkdir -p'
 # alias rm='rm -i'
 
 # audio
-alias playwav='rhythmbox *.wav'
-alias playmp3='rhythmbox *.mp3'
-alias playogg='rhythmbox *.ogg'
+alias playwav='rhythmbox *.wav &>/dev/null'
+alias playmp3='rhythmbox *.mp3 &>/dev/null'
+alias playogg='rhythmbox *.ogg &>/dev/null'
 
 # video
 alias playavi='vlc *.avi'
