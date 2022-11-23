@@ -146,3 +146,5 @@ up () {
 }
 
 complete -C /usr/bin/terraform terraform
+
+complete -C /usr/bin/packer packer

@@ -39,15 +39,15 @@ alias mkdir='mkdir -p'
 # alias rm='rm -i'
 
 # audio
-alias playwav='rhythmbox *.wav &>/dev/null'
-alias playmp3='rhythmbox *.mp3 &>/dev/null'
-alias playogg='rhythmbox *.ogg &>/dev/null'
+alias playwav='vlc *.wav >/dev/null &'
+alias playmp3='vlc *.mp3 >/dev/null &'
+alias playogg='vlc *.ogg >/dev/null &'
 
 # video
-alias playavi='vlc *.avi'
-alias playmp4='vlc *.mp4'
-alias playmkv='vlc *.mkv'
-alias playavi='vlc *.avi'
+alias playavi='vlc *.avi &>/dev/null &'
+alias playmp4='vlc *.mp4 &>/dev/null &'
+alias playmkv='vlc *.mkv &>/dev/null &'
+alias playavi='vlc *.avi &>/dev/null &'
 
 alias grep='grep --color=auto'
 alias egrep='egrep --color=auto'

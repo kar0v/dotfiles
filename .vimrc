@@ -7,6 +7,7 @@
 colorscheme torte
 autocmd filetype yaml "set ts=2 sts=2 sw=2
 
+set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 
 set ai
 " Disable compatibility with vi which can cause unexpected issues.
