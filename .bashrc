@@ -13,6 +13,8 @@ export EDITOR=vim
 if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
+
+. ~/.packer.bc
 ### ---------------------------------------------- ###
 ### PATH ----------------------------------------- ###
 if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]
