@@ -7,6 +7,9 @@
 colorscheme torte
 autocmd filetype yaml "set ts=2 sts=2 sw=2
 
+scriptencoding utf-8
+set encoding=utf-8
+
 set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 
 set ai
