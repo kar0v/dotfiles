@@ -15,6 +15,15 @@ if [ -f /etc/bashrc ]; then
 fi
 
 . ~/.packer.bc
+
+# Source gitflow completion
+if [ -f /home/$USER/.gitflow-completion.sh ]; then
+  . /home/$USER/.gitflow-completion.sh 
+fi
+
+
+
+
 ### ---------------------------------------------- ###
 ### PATH ----------------------------------------- ###
 if ! [[ "$PATH" =~ "$HOME/.local/bin:$HOME/bin:" ]]
@@ -54,7 +63,7 @@ fi
 # aws cli bash completion
 if [ -x "$(command -v aws_completer)" ]; then
 	export PATH=$PATH':~/.local/bin/aws_completer'
-	complete -C '/home/kkarov/.local/bin/aws_completer' aws
+  complete -C '$(which aws_completer)' aws
 #	echo "bash completion for aws-cli loaded"
 else
 	echo "aws_completer is not installed"
@@ -157,3 +166,5 @@ PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
 
 
+
+export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"  # Added by n-install (see http://git.io/n-install-repo).
