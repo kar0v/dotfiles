@@ -1,0 +1,1128 @@
+#
+# bash completion for chef and knife command
+#
+
+# chef repository directory name(relative path from ${HOME})
+if [ -z "${__repodir}" ];then
+  __repodir="chef-repo"
+fi
+
+__get_chef_recipes()
+{
+	if [ -z "${__chef_recipes}" ];then
+		__chef_recipes=$(knife recipe list ${__chef_credential} | while read r;do echo "'recipe[$r]'";done)
+	fi
+}
+
+__get_chef_cookbooks()
+{
+	if [ -z "${__chef_cookbooks}" ];then
+
+		if [ ! -f ${__chef_conf_path} ]; then
+			echo "missing chef configuration file"
+			return
+		fi
+
+		grep -v ^\# ${__chef_conf_path} | grep cookbook_path >/dev/null 2>&1
+		if [ $? -ne 0 ]; then
+			echo "missing cookbook_path in ${__chef_conf_path}"
+			return
+		fi
+
+		grep -v ^\# ${__chef_conf_path} | tr -d "\n" | sed -E 's/\s+//g' | grep 'cookbook_path\[' >/dev/null 2>&1
+		if [ $? -eq 0 ]; then
+			__ckdirs=$(grep -v ^\# ${__chef_conf_path} | tr -d "\n" | sed -E 's/.*cookbook_path\s*\[//;s/\].*//' | tr -d "\"'" | sed 's/,/ /g')
+		else
+			__ckdirs=$(grep -v ^\# ${__chef_conf_path} | awk '/cookbook_path/{print $2;}' | tr -d "\"'" )
+		fi
+
+		__chef_cookbooks=$(find ${__ckdirs} -mindepth 1 -maxdepth 1 -type d 2>/dev/null | while read i;do basename $i;done)
+	fi
+}
+
+__get_chef_remote_cookbooks()
+{
+	if [ -z "${__chef_remote_cookbooks}" ];then
+		__chef_remote_cookbooks=$(knife cookbook list ${__chef_credential} | awk '{print $1}')
+	fi
+}
+
+__get_chef_nodes()
+{
+	if [ -z "${__chef_nodes}" ];then
+		__chef_nodes=$(knife node list ${__chef_credential})
+	fi
+}
+
+__get_chef_clients()
+{
+	if [ -z "${__chef_clients}" ];then
+		__chef_clients=$(knife client list ${__chef_credential})
+	fi
+}
+
+__get_chef_databags()
+{
+	if [ -z "${__chef_databags}" ];then
+		__chef_databags=$(knife data bag list ${__chef_credential})
+	fi
+}
+
+__get_chef_roles()
+{
+	if [ -z "${__chef_roles}" ];then
+		__chef_roles=$(knife role list ${__chef_credential} | while read r;do echo "'role[$r]'";done;)
+	fi
+}
+
+__get_chef_roles_name()
+{
+	if [ -z "${__chef_roles_name}" ];then
+		__chef_roles_name=$(knife role list ${__chef_credential} | while read r;do echo "$r";done;)
+	fi
+}
+
+__get_chef_environments()
+{
+	if [ -z "${__chef_environments}" ];then
+		__chef_environments=$(knife environment list ${__chef_credential})
+	fi
+}
+
+__get_chef_users()
+{
+	if [ -z "${__chef_users}" ];then
+		__chef_users=$(knife user list ${__chef_credential})
+	fi
+}
+
+__get_kitchen_platforms()
+{
+	egrep ^platforms: ${__kitchen_yml} >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		__kitchen_platforms=""
+		return
+	fi
+
+	egrep -A9999 ^platforms: ${__kitchen_yml} | egrep -v ^platforms: | egrep ^[a-z]+: >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		__next=$( egrep -A9999 ^platforms: ${__kitchen_yml} | egrep -v ^platforms: | egrep ^[a-z]+: | head -1 )
+		__kitchen_platforms=$(egrep -A9999 ^platforms: ${__kitchen_yml} | egrep -v ^platforms: | egrep -B9999 ^${__next} | egrep -- "^\s+- name:" | awk '{print $3}')
+	else
+		__kitchen_platforms=$(egrep -A9999 ^platforms: ${__kitchen_yml} | egrep -v ^platforms: | egrep -- "^\s+- name:" | awk '{print $3}')
+	fi
+}
+
+__get_kitchen_suites()
+{
+	egrep ^suites: ${__kitchen_yml} >/dev/null 2>&1
+	if [ $? -ne 0 ]; then
+		__kitchen_suites=""
+		return
+	fi
+
+	egrep -A9999 ^suites: ${__kitchen_yml} | egrep -v ^suites: | egrep ^[a-z]+: >/dev/null 2>&1
+	if [ $? -eq 0 ]; then
+		__next=$( egrep -A9999 ^suites: ${__kitchen_yml} | egrep -v ^suites: | egrep ^[a-z]+: | head -1 )
+		__kitchen_suites=$(egrep -A9999 ^suites: ${__kitchen_yml} | egrep -v ^suites: | egrep -B9999 ^${__next} | egrep -- "^\s+- name:" | awk '{print $3}')
+	else
+		__kitchen_suites=$(egrep -A9999 ^suites: ${__kitchen_yml} | egrep -v ^suites: | egrep -- "^\s+- name:" | awk '{print $3}')
+	fi
+}
+
+__get_kitchen_instances()
+{
+	if [ "${__kitchen_yml}" == "" ]; then
+		return
+	fi
+	__get_kitchen_suites
+	__get_kitchen_platforms
+	__kitchen_instances=""
+	if [ "${__kitchen_suites}" != "" -a "${__kitchen_platforms}" != "" ]; then
+		for s in ${__kitchen_suites}
+		do
+			for p in ${__kitchen_platforms}
+			do
+				__kitchen_instances="${__kitchen_instances} ${s}-${p}"
+			done
+		done
+	fi
+}
+
+_chef_completion()
+{
+	local cur prev cword
+	_get_comp_words_by_ref -n : cur prev cword
+
+	COMPREPLY=()
+        __copt_lic="--chef-license"
+        __copt_gen="-C --copyright -m --email -a --generator-arg -I --license -g --generator-cookbook"
+        __copt_prt="-h --help -v --version"
+
+	if [ "${cword}" -eq 1 ]; then
+		COMPREPLY=( $(compgen -W "exec env gem generate shell-init install update push push-archive show-policy diff export clean-policy-revisions clean-policy-cookbooks delete-policy-group delete-policy undelete describe-cookbook report capture" -- "${cur}"))
+	elif [ "${cword}" -eq 2 ]; then
+		case "${COMP_WORDS[1]}" in
+		gem)
+			COMPREPLY=( $(compgen -W "build cert check cleanup contents dependency environment fetch generate_index help info install list lock mirror open outdated owner pristine push query rdoc search server signin signout sources specification stale uninstall unpack update which yank" -- "${cur}"))
+			;;
+		generate)
+			COMPREPLY=( $(compgen -W "cookbook recipe attribute template file helpers resource repo policyfile generator build-cookbook" -- "${cur}"))
+			;;
+		report)
+			COMPREPLY=( $(compgen -W "cookbooks nodes -h --help" -- "${cur}"))
+			;;
+		capture)
+			__get_chef_nodes
+			COMPREPLY=( $(compgen -W "${__chef_nodes} -h --help" -- "${cur}"))
+			;;
+		esac
+	elif [ "${cword}" -ge 3 ]; then
+		# common options
+		if [ "${prev}" == "--chef-license" ];then
+			COMPREPLY=( $(compgen -W "accept accept-no-persist accept-silent" -- "${cur}"))
+			return
+		elif [ "${prev}" == "-I" -o "${prev}" == "--license" ];then
+			COMPREPLY=( $(compgen -W "all_rights apachev2 mit gplv2 gplv3" -- "${cur}"))
+			return
+		elif [ "${prev}" == "-C" -o \
+		       "${prev}" == "--copyright" -o \
+		       "${prev}" == "-m" -o \
+		       "${prev}" == "--email" -o \
+		       "${prev}" == "-a" -o \
+		       "${prev}" == "--generator-arg" ];then
+			COMPREPLY=()
+			return
+		fi
+
+		case "${COMP_WORDS[1]}" in
+		generate)
+			if [ "${prev}" == "-g" -o "${prev}" == "--generator-cookbook" ];then
+				compopt -o filenames
+				COMPREPLY=( $(compgen -d -- "${cur}"))
+				return
+			fi
+
+			if [ "${cword}" -eq 3 ]; then
+				case "${COMP_WORDS[2]}" in
+				attribute|cookbook|file|helpers|recipe|resource|template)
+					compopt -o filenames
+					COMPREPLY=( $(compgen -d -W "${__copt_prt}" -- "${cur}"))
+					;;
+				repo)
+					compopt -o filenames
+					COMPREPLY=( $(compgen -d -- "${cur}"))
+					;;
+				esac
+			elif [ "${cword}" -eq 4 ]; then
+				case "${COMP_WORDS[2]}" in
+				attribute|file|helpers|recipe|resource|template)
+					COMPREPLY=()
+					;;
+				cookbook)
+					COMPREPLY=( $(compgen -W "-b --berks ${__copt_lic} ${__copt_gen} -v --version --kitchen --pipeline -P --policy -V --verbose -w --workflow" -- "${cur}"))
+					;;
+				repo)
+					COMPREPLY=( $(compgen -W "${__copt_lic} ${__copt_gen} ${__copt_prt} -P --policy -p --policy-only -r --roles -V --verbose" -- "${cur}"))
+					;;
+				esac
+			elif [ "${cword}" -ge 5 ]; then
+				case "${COMP_WORDS[2]}" in
+				attribute|helpers|recipe|resource)
+					COMPREPLY=( $(compgen -W "${__copt_gen} -v --version" -- "${cur}"))
+					;;
+				cookbook)
+					COMPREPLY=( $(compgen -W "-b --berks ${__copt_lic} ${__copt_gen} -v --version --kitchen --pipeline -P --policy -V --verbose -w --workflow" -- "${cur}"))
+					;;
+				file|template)
+					if [ "${prev}" == "-s" -o "${prev}" == "--source" ];then
+						COMPREPLY=()
+					else
+						COMPREPLY=( $(compgen -W "${__copt_gen} -s --source -v --version" -- "${cur}"))
+					fi
+					;;
+				repo)
+					COMPREPLY=( $(compgen -W "${__copt_lic} ${__copt_gen} ${__copt_prt} -P --policy -p --policy-only -r --roles -V --verbose" -- "${cur}"))
+					;;
+				esac
+			fi
+			;;
+		report)
+			if [ "${prev}" == "-s" -o \
+			     "${prev}" == "--chef-server-url" -o \
+			     "${prev}" == "-k" -o \
+			     "${prev}" == "--client-key" -o \
+			     "${prev}" == "-n" -o \
+			     "${prev}" == "--client-name" -o \
+			     "${prev}" == "-F" -o \
+			     "${prev}" == "--node-filter" -o \
+			     "${prev}" == "-p" -o \
+			     "${prev}" == "--profile" -o \
+			     "${prev}" == "-w" -o \
+			     "${prev}" == "--workers" ]; then
+				COMPREPLY=()
+			elif [ "${prev}" == "-c" -o "${prev}" == "--credentials" ]; then
+				compopt -o filenames
+				COMPREPLY=( $(compgen -f -- "${cur}"))
+			elif [ "${prev}" == "-f" -o "${prev}" == "--format" ]; then
+				COMPREPLY=( $(compgen -W "txt csv" -- "${cur}"))
+			else
+				global_flags="-a --anonymize -s --chef-server-url -k --client-key -n --client-name -c --credentials -f --format -F --node-filter -p --profile -o --ssl-no-verify"
+				case "${COMP_WORDS[2]}" in
+				cookbooks)
+					COMPREPLY=( $(compgen -W "-h --help -u --only-unused -V --verify-upgrade -w --workers ${global_flags}" -- "${cur}"))
+					;;
+				nodes)
+					COMPREPLY=( $(compgen -W "-h --help ${global_flags}" -- "${cur}"))
+					;;
+				esac
+			fi
+			;;
+		capture)
+			if [ "${prev}" == "-s" -o \
+			     "${prev}" == "--chef-server-url" -o \
+			     "${prev}" == "-k" -o \
+			     "${prev}" == "--client-key" -o \
+			     "${prev}" == "-n" -o \
+			     "${prev}" == "--client-name" -o \
+			     "${prev}" == "-p" -o \
+			     "${prev}" == "--profile" ]; then
+				COMPREPLY=()
+			elif [ "${prev}" == "-c" -o "${prev}" == "--credentials" ]; then
+				compopt -o filenames
+				COMPREPLY=( $(compgen -f -- "${cur}"))
+			else
+				COMPREPLY=( $(compgen -W "-s --chef-server-url -k --client-key -n --client-name -c --credentials -h --help -p --profile -o --ssl-no-verify -d --with-data-bags" -- "${cur}"))
+			fi
+			;;
+		esac
+	fi
+}
+
+_knife_completion()
+{
+	local cur prev cword
+	_get_comp_words_by_ref -n : cur prev cword
+
+	if [ -z "${__chef_credential}" ];then
+		if [ -f ${HOME}/.chef/credentials ];then
+			__chef_credential=""
+		elif [ -f ${HOME}/.cinc/credentials ];then
+			__chef_credential=""
+		elif [ -f ${HOME}/.chef/config.rb ];then
+			__chef_credential="-c ${HOME}/.chef/config.rb"
+		elif [ -f ${HOME}/.cinc/config.rb ];then
+			__chef_credential="-c ${HOME}/.cinc/config.rb"
+		elif [ -f ${HOME}/.chef/knife.rb ];then
+			__chef_credential="-c ${HOME}/.chef/knife.rb"
+		elif [ -f ${HOME}/.cinc/knife.rb ];then
+			__chef_credential="-c ${HOME}/.cinc/knife.rb"
+		elif [ -f ${HOME}/${__repodir}/.chef/config.rb ];then
+			__chef_credential="-c ${HOME}/${__repodir}/.chef/config.rb"
+		elif [ -f ${HOME}/${__repodir}/.cinc/config.rb ];then
+			__chef_credential="-c ${HOME}/${__repodir}/.cinc/config.rb"
+		elif [ -f ${HOME}/${__repodir}/.chef/knife.rb ];then
+			__chef_credential="-c ${HOME}/${__repodir}/.chef/knife.rb"
+		elif [ -f ${HOME}/${__repodir}/.cinc/knife.rb ];then
+			__chef_credential="-c ${HOME}/${__repodir}/.cinc/knife.rb"
+		fi
+	fi
+
+	if [ -z "${__chef_conf_path}" ]; then
+		if [ -f ${HOME}/.chef/config.rb ];then
+			__chef_conf_path="${HOME}/.chef/config.rb"
+		elif [ -f ${HOME}/.cinc/config.rb ];then
+			__chef_conf_path="${HOME}/.cinc/config.rb"
+		elif [ -f ${HOME}/.chef/knife.rb ];then
+			__chef_conf_path="${HOME}/.chef/knife.rb"
+		elif [ -f ${HOME}/.cinc/knife.rb ];then
+			__chef_conf_path="${HOME}/.cinc/knife.rb"
+		elif [ -f ${HOME}/${__repodir}/.chef/config.rb ];then
+			__chef_conf_path="${HOME}/${__repodir}/.chef/config.rb"
+		elif [ -f ${HOME}/${__repodir}/.cinc/config.rb ];then
+			__chef_conf_path="${HOME}/${__repodir}/.cinc/config.rb"
+		elif [ -f ${HOME}/${__repodir}/.chef/knife.rb ];then
+			__chef_conf_path="${HOME}/${__repodir}/.chef/knife.rb"
+		elif [ -f ${HOME}/${__repodir}/.cinc/knife.rb ];then
+			__chef_conf_path="${HOME}/${__repodir}/.cinc/knife.rb"
+		fi
+	fi
+
+	COMPREPLY=()
+        __knop_srv="-s --server-url --chef-zero-host --chef-zero-port -k --key -z --local-mode -u --user --profile --no-listen --listen --no-fips --fips"
+        __knop_con="--defaults -y --yes -e --editor -d --disable-editing"
+        __knop_cnf="-c --config --config-option"
+        __knop_env="-E --environment"
+        __knop_prt="--no-color --color -F --format --print-after -V --verbose -v --version -h --help"
+
+	if [ "${cword}" -eq 1 ]; then
+		COMPREPLY=( $(compgen -W "bootstrap client cookbook data environment node recipe role search ssh status user" -- "${cur}"))
+	elif [ "${cword}" -eq 2 ]; then
+		case "${COMP_WORDS[1]}" in
+		client)
+			COMPREPLY=( $(compgen -W "create delete edit key list reregister show" -- "${cur}"))
+			;;
+		cookbook)
+			COMPREPLY=( $(compgen -W "bulk delete download list metadata show upload" -- "${cur}"))
+			;;
+		data)
+			COMPREPLY=( $(compgen -W "bag" -- "${cur}"))
+			;;
+		environment)
+			COMPREPLY=( $(compgen -W "compare create delete edit from list show" -- "${cur}"))
+			;;
+		node)
+			__node=""
+			COMPREPLY=( $(compgen -W "bulk create delete edit environment from list policy run_list show" -- "${cur}"))
+			;;
+		recipe)
+			COMPREPLY=( $(compgen -W "list" -- "${cur}"))
+			;;
+		role)
+			__chef_roles_name=
+			COMPREPLY=( $(compgen -W "bulk create delete edit env_run_list from list run_list show" -- "${cur}"))
+			;;
+		ssh)
+			__get_chef_nodes
+			__prefixed_nodes=$(for n in ${__chef_nodes};do echo "name:$n";done)
+			if [ "${cur:0:2}" == '"n' ];then
+				COMPREPLY=( $(compgen -P'"' -W "${__prefixed_nodes}" -- "${cur}"))
+			fi
+			;;
+		status)
+			if [ "${cur:0:2}" == '"n' ]; then
+				__get_chef_nodes
+				__prefixed_nodes=$(for n in ${__chef_nodes};do echo "name:$n";done)
+				COMPREPLY=( $(compgen -P'"' -W "${__prefixed_nodes}" -- "${cur}"))
+			else
+				COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_con} ${__knop_env} --hide-by-mins -l --long -m --medium -r --run-list -s --sort-reverse" -- "${cur}"))
+			fi
+			;;
+		user)
+			COMPREPLY=( $(compgen -W "create delete edit key list reregister show" -- "${cur}"))
+			;;
+		esac
+	elif [ "${cword}" -ge 3 ]; then
+		# common options
+		if [ "${prev}" == "-c" -o "${prev}" == "--config" -o "${prev}" == "-i" -o "${prev}" == "--input" ];then
+			compopt -o filenames
+			COMPREPLY=( $(compgen -f -- "${cur}"))
+			return
+		elif [ "${prev}" == "-F" -o "${prev}" == "--format" ];then
+			COMPREPLY=( $(compgen -W "summary json text yaml pp" -- "${cur}"))
+			return
+		elif [ "${prev}" == "-E" -o "${prev}" == "--environment" ];then
+			__get_chef_environments
+			COMPREPLY=( $(compgen -W "${__chef_environments}" -- "${cur}"))
+			return
+		elif [ "${prev}" == "-s" -o \
+		       "${prev}" == "--server-url" -o \
+		       "${prev}" == "--chef-zero-host" -o \
+		       "${prev}" == "--chef-zero-port" -o \
+		       "${prev}" == "-k" -o \
+		       "${prev}" == "--key" -o \
+		       "${prev}" == "--config-option" -o \
+		       "${prev}" == "-e" -o \
+		       "${prev}" == "--editor" -o \
+		       "${prev}" == "-u" -o \
+		       "${prev}" == "--user" -o \
+		       "${prev}" == "--profile" ];then
+			COMPREPLY=()
+			return
+		fi
+
+		case "${COMP_WORDS[1]}" in
+		bootstrap)
+			# knife bootstrap [SSH_USER@]FQDN (options)
+			if [ "${prev}" == "--bootstrap-curl-options" -o \
+			     "${prev}" == "--bootstrap-install-command" -o \
+			     "${prev}" == "--bootstrap-no-proxy" -o \
+			     "${prev}" == "--bootstrap-preinstall-command" -o \
+			     "${prev}" == "--bootstrap-product" -o \
+			     "${prev}" == "--bootstrap-proxy" -o \
+			     "${prev}" == "--bootstrap-proxy-pass" -o \
+			     "${prev}" == "--bootstrap-proxy-user" -o \
+			     "${prev}" == "-t" -o \
+			     "${prev}" == "--bootstrap-template" -o \
+			     "${prev}" == "--bootstrap-url" -o \
+			     "${prev}" == "--bootstrap-vault-item" -o \
+			     "${prev}" == "--bootstrap-vault-json" -o \
+			     "${prev}" == "--bootstrap-version" -o \
+			     "${prev}" == "--bootstrap-wget-options" -o \
+			     "${prev}" == "-f" -o \
+			     "${prev}" == "--ca-trust-file" -o \
+			     "${prev}" == "-N" -o \
+			     "${prev}" == "--node-name" -o \
+			     "${prev}" == "-s" -o \
+			     "${prev}" == "--server-url" -o \
+			     "${prev}" == "--chef-zero-host" -o \
+			     "${prev}" == "--chef-zero-port" -o \
+			     "${prev}" == "--secret" -o \
+			     "${prev}" == "--secret-file" -o \
+			     "${prev}" == "-k" -o \
+			     "${prev}" == "--key" -o \
+			     "${prev}" == "--config-option" -o \
+			     "${prev}" == "-P" -o \
+			     "${prev}" == "--connection-password" -o \
+			     "${prev}" == "-p" -o \
+			     "${prev}" == "--connection-port" -o \
+			     "${prev}" == "-U" -o \
+			     "${prev}" == "--connection-user" -o \
+			     "${prev}" == "-e" -o \
+			     "${prev}" == "--editor" -o \
+			     "${prev}" == "-j" -o \
+			     "${prev}" == "--json-attributes" -o \
+			     "${prev}" == "-R" -o \
+			     "${prev}" == "--kerberos-realm" -o \
+			     "${prev}" == "-S" -o \
+			     "${prev}" == "--kerberos-service" -o \
+			     "${prev}" == "-W" -o \
+			     "${prev}" == "--max-wait" -o \
+			     "${prev}" == "-m" -o \
+			     "${prev}" == "--msi-url" -o \
+			     "${prev}" == "-u" -o \
+			     "${prev}" == "--user" -o \
+			     "${prev}" == "--policy-group" -o \
+			     "${prev}" == "--policy-name" -o \
+			     "${prev}" == "--profile" -o \
+			     "${prev}" == "-r" -o \
+			     "${prev}" == "--run-list" -o \
+			     "${prev}" == "-G" -o \
+			     "${prev}" == "--session-timeout" -o \
+			     "${prev}" == "--ssh-gateway" -o \
+			     "${prev}" == "--su-password" -o \
+			     "${prev}" == "--su-user" -o \
+			     "${prev}" == "--tags" -o \
+			     "${prev}" == "--winrm-ssl-peer-fingerprint" ];then
+				COMPREPLY=()
+			elif [ "${prev}" == "-E" -o "${prev}" == "--environment" ];then
+				__get_chef_environments
+				COMPREPLY=( $(compgen -W "${__chef_environments}" -- "${cur}"))
+			elif [ "${prev}" == "--node-ssl-verify-mode" ];then
+				COMPREPLY=( $(compgen -W "peer none" -- "${cur}"))
+			elif [ "${prev}" == "-o" -o "${prev}" == "--connection-protocol" ];then
+				COMPREPLY=( $(compgen -W "ssh winrm" -- "${cur}"))
+			elif [ "${prev}" == "-F" -o "${prev}" == "--format" ];then
+				COMPREPLY=( $(compgen -W "summary text json yaml pp" -- "${cur}"))
+			elif [ "${prev}" == "--channel" ];then
+				COMPREPLY=( $(compgen -W "stable current unstable" -- "${cur}"))
+			elif [ "${prev}" == "--chef-license" ];then
+				COMPREPLY=( $(compgen -W "accept accept-no-persist accept-silent" -- "${cur}"))
+			elif [ "${prev}" == "-w" -o "${prev}" == "--winrm-auth-method" ];then
+				COMPREPLY=( $(compgen -W "plaintext kerberos ssl negotiate" -- "${cur}"))
+			elif [ "${prev}" == "--ssh-verify-host-key" ];then
+				COMPREPLY=( $(compgen -W "always accept accept_new accept_new_or_local_tunnel never" -- "${cur}"))
+			elif [ "${prev}" == "--bootstrap-vault-file" -o \
+			       "${prev}" == "--json-attribute-file" -o \
+			       "${prev}" == "--secret-file" -o \
+			       "${prev}" == "-i" -o \
+			       "${prev}" == "--ssh-gateway-identity" -o \
+			       "${prev}" == "--ssh-identity-file" ];then
+				compopt -o filenames
+				COMPREPLY=( $(compgen -f -- "${cur}"))
+			else
+				COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_con} ${__knop_env} --bootstrap-curl-options --bootstrap-install-command --bootstrap-no-proxy --bootstrap-preinstall-command --bootstrap-product --bootstrap-proxy --bootstrap-proxy-pass --bootstrap-proxy-user -t --bootstrap-template --bootstrap-url --bootstrap-vault-file --bootstrap-vault-item --bootstrap-vault-json --bootstrap-version --bootstrap-wget-options -f --ca-trust-file --channel --chef-license -N --node-name --secret --secret-file -P --connection-password -p --connection-port -o --connection-protocol -U --connection-user --encrypt -j --json-attributes --json-attribute-file --hint -R --kerberos-realm -S --kerberos-service -W --max-wait -m --msi-url --node-ssl-verify-mode --no-node-verify-api-cert --node-verify-api-cert --policy-group --policy-name --session-timeout --sudo-preserve-home -r --run-list -A --ssh-forward-agent -G --ssh-gateway --ssh-gateway-identity -i --ssh-identity-file --ssh-verify-host-key --su-password --su-user --tags --sudo --use-sudo-password -w --winrm-auth-method --winrm-basic-auth-only --winrm-no-verify-cert --winrm-ssl --winrm-ssl-peer-fingerprint -x" -- "${cur}"))
+			fi
+			;;
+		client)
+			case "${COMP_WORDS[2]}" in
+			delete)
+				if [ "${cword}" -eq 3 ]; then
+					__get_chef_clients
+					COMPREPLY=( $(compgen -W "${__chef_clients} -h --help" -- "${cur}"))
+				else
+					__get_chef_clients
+					COMPREPLY=( $(compgen -W "${__chef_clients} ${__knop_srv} ${__knop_con} ${__knop_cnf} ${__knop_env} ${__knop_prt} -D --delete-validators" -- "${cur}"))
+				fi
+				;;
+			edit|reregister)
+				if [ "${cword}" -eq 3 ]; then
+					__get_chef_clients
+					COMPREPLY=( $(compgen -W "${__chef_clients} -h --help" -- "${cur}"))
+				else
+					COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_con} ${__knop_cnf} ${__knop_env} ${__knop_prt}" -- "${cur}"))
+				fi
+				;;
+			show)
+				if [ "${cword}" -eq 3 ]; then
+					__get_chef_clients
+					COMPREPLY=( $(compgen -W "${__chef_clients} -h --help" -- "${cur}"))
+				else
+					COMPREPLY=( $(compgen -W "-a --attribute -S --field-separator ${__knop_srv} ${__knop_con} ${__knop_cnf} ${__knop_env} ${__knop_prt}" -- "${cur}"))
+				fi
+				;;
+			esac
+			;;
+		cookbook)
+			case "${COMP_WORDS[2]}" in
+			bulk)
+				if [ "${cword}" -eq 3 ];then
+					COMPREPLY=( $(compgen -W "delete" -- "${cur}"))
+				elif [ "${cword}" -eq 4 ];then
+					COMPREPLY=()
+				else
+					# knife cookbook bulk delete REGEX (options)
+					COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} -p --purge" -- "${cur}"))
+				fi
+				;;
+			upload)
+				__chef_cookbooks=
+				__get_chef_cookbooks
+				COMPREPLY=( $(compgen -W "${__chef_cookbooks}" -- "${cur}"))
+				;;
+			show)
+				# knife cookbook show COOKBOOK [VERSION] [PART] [FILENAME] (options)
+				__get_chef_remote_cookbooks
+				if [ "${cword}" -eq 3 ];then
+					COMPREPLY=( $(compgen -W "${__chef_remote_cookbooks}" -- "${cur}"))
+				fi
+				;;
+			delete)
+				# knife cookbook delete COOKBOOK VERSION (options)
+				__get_chef_remote_cookbooks
+				if [ "${cword}" -eq 3 ];then
+					__bookname=""
+					COMPREPLY=( $(compgen -W "${__chef_remote_cookbooks} -h --help" -- "${cur}"))
+				elif [ "${cword}" -eq 4 -a "${COMP_WORDS[3]}" != "-h" -a "${COMP_WORDS[3]}" != "--help" ];then
+					if [ "${__bookname}" != "${COMP_WORDS[3]}" ];then
+						# new or cookbook changed,get cookbook version
+						__ckver=$(knife cookbook list ${__chef_credential} -a -F json | tr -d '",' | sed 's/ \+/ /g;s/^ //' | grep "^${COMP_WORDS[3]} " | sed 's/'${COMP_WORDS[3]}' //')
+						__bookname="${COMP_WORDS[3]}"
+					fi
+					COMPREPLY=( $(compgen -W "${__ckver} --all" -- "${cur}"))
+				elif [ "${cword}" -ge 5 ];then
+					COMPREPLY=( $(compgen -W "-a --all ${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_con} -p --purge" -- "${cur}"))
+				fi
+				;;
+			download)
+				__get_chef_remote_cookbooks
+				if [ "${cword}" -eq 3 ];then
+					__bookname=""
+					COMPREPLY=( $(compgen -W "${__chef_remote_cookbooks}" -- "${cur}"))
+				elif [ "${cword}" -eq 4 -a "${COMP_WORDS[3]}" != "-h" -a "${COMP_WORDS[3]}" != "--help" ];then
+					if [ "${__bookname}" != "${COMP_WORDS[3]}" ];then
+						# new or cookbook changed,get cookbook version
+						__ckver=$(knife cookbook list ${__chef_credential} -a -F json | tr -d '",' | sed 's/ \+/ /g;s/^ //' | grep "^${COMP_WORDS[3]} " | sed 's/'${COMP_WORDS[3]}' //')
+						__bookname="${COMP_WORDS[3]}"
+					fi
+					COMPREPLY=( $(compgen -W "${__ckver} ${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} --dir -f --force -N --latest" -- "${cur}"))
+				elif [ "${cword}" -ge 5 ];then
+					if [ "${prev}" == "-d" -o "${prev}" == "--dir" ];then
+						compopt -o filenames
+						COMPREPLY=( $(compgen -d -- "${cur}"))
+					else
+						COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} --dir -f --force -N --latest" -- "${cur}"))
+					fi
+				fi
+				;;
+			esac
+			;;
+		data)
+			if [ "${cword}" -eq 2 ];then
+				COMPREPLY=( $(compgen -W "bag" -- "${cur}"))
+			elif [ "${COMP_WORDS[2]}" == "bag" -a "${cword}" -eq 3 ];then
+				COMPREPLY=( $(compgen -W "create delete edit from list show" -- "${cur}"))
+			elif [ "${COMP_WORDS[2]}" == "bag" -a "${cword}" -ge 4 ];then
+				case "${COMP_WORDS[3]}" in
+				create)
+					if [ "${cword}" == 4 ];then
+						COMPREPLY=( )
+					elif [ "${cur:0:1}" == "-" ];then
+						COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} --encrypt --secret --secret-file" -- "${cur}"))
+					fi
+					;;
+				from)
+					COMPREPLY=( $(compgen -W "file" -- "${cur}"))
+					;;
+				list)
+					if [ "${prev}" == "-E" -o "${prev}" == "--environment" ]; then
+						__get_chef_environments
+						COMPREPLY=( $(compgen -W "${__chef_environments}" -- "${cur}"))
+						return
+					fi
+					COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} -w --with-uri" -- "${cur}"))
+					;;
+				show)
+					# knife data bag show BAG [ITEM] (options)
+					if [ "${cword}" == 4 ];then
+						__get_chef_databags
+						COMPREPLY=( $(compgen -W "${__chef_databags}" -- "${cur}"))
+					elif [ "${cur:0:1}" == "-" ];then
+						COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_con} --secret --secret-file --encrypt" -- "${cur}"))
+					fi
+					;;
+				esac
+			fi
+			;;
+		node)
+			case "${COMP_WORDS[2]}" in
+			run_list)
+				if [ "${cword}" -eq 3 ];then
+					__node=""
+					COMPREPLY=( $(compgen -W "add remove set" -- "${cur}"))
+				elif [ "${cword}" -eq 4 ];then
+					__node=""
+					__get_chef_nodes
+					COMPREPLY=( $(compgen -W "${__chef_nodes} --help" -- "${cur}"))
+				elif [ "${cword}" -ge 5 -a "${COMP_WORDS[4]}" != "--help" ];then
+					case "${COMP_WORDS[3]}" in
+					add)
+						# knife node run_list add [NODE] [ENTRY [ENTRY]] (options)
+						if [ "${prev}" = "-a" -o "${prev}" = "--after" -o "${prev}" = "-b" -o "${prev}" == "--before" ];then
+							if [ "${COMP_WORDS[4]}" != "${__node}" ];then
+								# new or node changed,get node's run_list
+								__runlist=$(knife node show ${COMP_WORDS[4]} -r ${__chef_credential} | grep 'recipe\[' | sed 's/run_list://' | tr -d " ")
+								__node=${COMP_WORDS[4]}
+							fi
+							COMPREPLY=( $(compgen -P"'" -S "'" -W "${__runlist}" -- "${cur}"))
+						elif [ "${cur:0:1}" = "-" ];then
+							COMPREPLY=( $(compgen -W "-a --after -b --before ${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_con}" -- "${cur}"))
+						else
+							__get_chef_roles
+							__get_chef_recipes
+							COMPREPLY=( $(compgen -P"'" -W "${__chef_roles} ${__chef_recipes}" -- "${cur}"))
+						fi
+						;;
+					set)
+						# knife node run_list set NODE ENTRIES (options)
+						if [ "${cur:0:1}" = "-" ];then
+							COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_con}" -- "${cur}"))
+						else
+							__get_chef_roles
+							__get_chef_recipes
+							COMPREPLY=( $(compgen -P"'" -W "${__chef_roles} ${__chef_recipes}" -- "${cur}"))
+						fi
+						;;
+					remove)
+						# knife node run_list remove [NODE] [ENTRY [ENTRY]] (options)
+						if [ "${cur:0:1}" = "-" ];then
+							COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_con}" -- "${cur}"))
+						else
+							if [ "${COMP_WORDS[4]}" != "${__node}" ];then
+								# new or node changed,get node's run_list
+								__runlist=$(knife node show ${COMP_WORDS[4]} -r ${__chef_credential} | grep 'recipe\[' | sed 's/run_list://' | tr -d " ")
+								__node=${COMP_WORDS[4]}
+							fi
+							COMPREPLY=( $(compgen -P"'" -S "'" -W "${__runlist}" -- "${cur}"))
+						fi
+						;;
+					esac
+				fi
+				;;
+			environment)
+				# knife node environment set NODE ENVIRONMENT
+				if [ "${cword}" -eq 3 ];then
+					COMPREPLY=( $(compgen -W "set" -- "${cur}"))
+				elif [ "${cword}" -eq 4 -a "${COMP_WORDS[3]}" == "set" ];then
+					__get_chef_nodes
+					COMPREPLY=( $(compgen -W "${__chef_nodes} --help" -- "${cur}"))
+				elif [ "${cword}" -eq 5 -a "${COMP_WORDS[3]}" == "set" -a "${COMP_WORDS[4]}" != "--help" ];then
+					__get_chef_environments
+					COMPREPLY=( $(compgen -W "${__chef_environments}" -- "${cur}"))
+				elif [ "${cword}" -ge 6 -a "${COMP_WORDS[3]}" == "set" -a "${COMP_WORDS[4]}" != "--help" ];then
+					if [ "${prev}" == "-s" -o "${prev}" == "--server-url" ];then
+						COMPREPLY=( )
+					else
+						COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con}" -- "${cur}"))
+					fi
+				fi
+				;;
+			show)
+				# knife node show NODE (options)
+				if [ "${cword}" -eq 3 ];then
+					__get_chef_nodes
+					COMPREPLY=( $(compgen -W "${__chef_nodes} --help" -- "${cur}"))
+				elif [ "${cword}" -ge 4 -a "${COMP_WORDS[3]}" != "--help" ];then
+					if [ "${prev}" == "-a" -o \
+					     "${prev}" == "--attribute" -o \
+					     "${prev}" == "-S" -o \
+					     "${prev}" == "--field-separator" ];then
+						COMPREPLY=()
+					else
+						COMPREPLY=( $(compgen -W "-a --attribute ${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} -S --field-separator -l --long -m --medium -r --run-list" -- "${cur}"))
+					fi
+				fi
+				;;
+			edit)
+				# knife node edit NODE (options)
+				if [ "${cword}" -eq 3 ];then
+					__get_chef_nodes
+					COMPREPLY=( $(compgen -W "${__chef_nodes} --help" -- "${cur}"))
+				elif [ "${cword}" -ge 4 -a "${COMP_WORDS[3]}" != "--help" ];then
+					COMPREPLY=( $(compgen -W "-a --all ${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_con}" -- "${cur}"))
+				fi
+				;;
+			delete)
+				# knife node delete [NODE [NODE]] (options)
+				if [ "${cword}" -eq 3 ];then
+					__get_chef_nodes
+					COMPREPLY=( $(compgen -W "${__chef_nodes} -h --help" -- "${cur}"))
+				elif [ "${cword}" -ge 4 -a "${COMP_WORDS[3]}" != "--help" ];then
+					__get_chef_nodes
+					COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_con} ${__knop_prt} ${__chef_nodes}" -- "${cur}"))
+				fi
+				;;
+			esac
+			;;
+		recipe)
+			# knife recipe list [PATTERN]
+			if [ "${cword}" -ge 3 ];then
+				COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con}" -- "${cur}"))
+			fi
+			;;
+		role)
+			case "${COMP_WORDS[2]}" in
+			bulk)
+				# knife role bulk delete REGEX (options)
+				if [ "${cword}" -eq 3 ];then
+					COMPREPLY=( $(compgen -W "delete" -- "${cur}"))
+				elif [ "${cword}" -eq 4 ];then
+					if [ "${cur:0:1}" == "-" ];then
+						COMPREPLY=( $(compgen -W "-h --help" -- "${cur}"))
+					fi
+				elif [ "${cword}" -ge 5 -a "${COMP_WORDS[4]}" != "-h" -a "${COMP_WORDS[4]}" != "--help" ];then
+					COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con}" -- "${cur}"))
+				fi
+				;;
+			create)
+				# knife role create ROLE (options)
+				if [ "${cword}" -eq 3 ];then
+					COMPREPLY=()
+				elif [ "${cword}" -ge 4 ];then
+					COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} --description" -- "${cur}"))
+				fi
+				;;
+			delete)
+				# knife role delete ROLE (options)
+				if [ "${cword}" -eq 3 ];then
+					__get_chef_roles_name
+					COMPREPLY=( $(compgen -W "${__chef_roles_name} -h --help" -- "${cur}"))
+				elif [ "${cword}" -ge 4 ];then
+					COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con}" -- "${cur}"))
+				fi
+				;;
+			edit)
+				# knife role edit ROLE (options)
+				if [ "${cword}" -eq 3 ];then
+					__get_chef_roles_name
+					COMPREPLY=( $(compgen -W "${__chef_roles_name} -h --help" -- "${cur}"))
+				elif [ "${cword}" -eq 4 ];then
+					COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_con} ${__knop_cnf} ${__knop_env} ${__knop_prt}" -- "${cur}"))
+				elif [ "${cword}" -ge 5 ];then
+					if [ "${prev}" == "-E" -o "${prev}" == "--environemnt" ];then
+						__get_chef_environments
+						COMPREPLY=( $(compgen -W "${__chef_environments}" -- "${cur}"))
+					else
+						COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_con} ${__knop_cnf} ${__knop_env} ${__knop_prt}" -- "${cur}"))
+					fi
+				fi
+				;;
+			from)
+				# knife role from file FILE [FILE..] (options)
+				if [ "${cword}" -eq 3 ];then
+					COMPREPLY=( $(compgen -W "file" -- "${cur}"))
+				elif [ "${cword}" -eq 4 ];then
+					compopt -o filenames
+					COMPREPLY=( $(compgen -f -- "${cur}"))
+				elif [ "${cword}" -ge 5 ];then
+					if [ "${cur:0:1}" == "-" ];then
+						COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_con} ${__knop_prt}" -- "${cur}"))
+					else
+						compopt -o filenames
+						COMPREPLY=( $(compgen -f -- "${cur}"))
+					fi
+				fi
+				;;
+			run_list)
+				if [ "${cword}" -eq 3 ];then
+					COMPREPLY=( $(compgen -W "add clear remove replace set" -- "${cur}"))
+				elif [ "${cword}" -eq 4 ];then
+					__role=""
+					__get_chef_roles_name
+					COMPREPLY=( $(compgen -W "${__chef_roles_name} -h --help" -- "${cur}"))
+				elif [ "${cword}" -ge 5 -a "${COMP_WORDS[4]}" != "-h" -a "${COMP_WORDS[4]}" != "--help" ];then
+					case "${COMP_WORDS[3]}" in
+					add)
+						# knife role run_list add [ROLE] [ENTRY [ENTRY]] (options)
+						if [ "${prev}" = "-a" -o "${prev}" = "--after" ];then
+							if [ "${COMP_WORDS[4]}" != "${__role}" ];then
+								# new or role changed,get role's run_list
+								__runlist=$(knife role show ${COMP_WORDS[4]} -r ${__chef_credential} | grep 'recipe\[' | sed 's/run_list://' | tr -d " ")
+								__role=${COMP_WORDS[4]}
+							fi
+							COMPREPLY=( $(compgen -P"'" -S "'" -W "${__runlist}" -- "${cur}"))
+						elif [ "${cur:0:1}" = "-" ];then
+							COMPREPLY=( $(compgen -W "-a --after ${__knop_srv} ${__knop_cnf} ${__knop_con} ${__knop_prt}" -- "${cur}"))
+						else
+							__get_chef_recipes
+							COMPREPLY=( $(compgen -P"'" -W "${__chef_recipes}" -- "${cur}"))
+						fi
+						;;
+					clear)
+						# knife role run_list clear [ROLE] (options)
+						if [ "${cword}" -eq 4 ];then
+							__get_chef_roles_name
+							COMPREPLY=( $(compgen -W "${__chef_roles_name} -h --help" -- "${cur}"))
+						elif [ "${cword}" -ge 5 ];then
+							COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con}" -- "${cur}"))
+						fi
+						;;
+					remove)
+						# knife role run_list remove [ROLE] [ENTRY] (options)
+						if [ "${cur:0:1}" = "-" ];then
+							COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con}" -- "${cur}"))
+						elif [ "${COMP_WORDS[4]:0:1}" != "-" -a "${cword}" -eq 5 ]; then
+							if [ "${COMP_WORDS[4]}" != "${__role}" ];then
+								# new or role changed,get role's run_list
+								__runlist=$(knife role show ${COMP_WORDS[4]} ${__chef_credential} | grep 'recipe\[' | sed 's/run_list://' | tr -d " ")
+								__role=${COMP_WORDS[4]}
+							fi
+							COMPREPLY=( $(compgen -P"'" -S "'" -W "${__runlist}" -- "${cur}"))
+						else
+							COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con}" -- "${cur}"))
+						fi
+						;;
+					replace)
+						# knife role run_list replace [ROLE] [OLD_ENTRY] [NEW_ENTRY] (options)
+						if [ "${cword}" -eq 4 ];then
+							__get_chef_roles_name
+							COMPREPLY=( $(compgen -W "${__chef_roles_name} -h --help" -- "${cur}"))
+						elif [ "${cword}" -eq 5 ];then
+							if [ "${COMP_WORDS[4]}" != "${__role}" ];then
+								# new or role changed,get role's run_list
+								__runlist=$(knife role show ${COMP_WORDS[4]} ${__chef_credential} | grep 'recipe\[' | sed 's/run_list://' | tr -d " ")
+								__role=${COMP_WORDS[4]}
+							fi
+							COMPREPLY=( $(compgen -P"'" -S "'" -W "${__runlist}" -- "${cur}"))
+						elif [ "${cword}" -eq 6 ];then
+							__get_chef_recipes
+							COMPREPLY=( $(compgen -P"'" -W "${__chef_recipes}" -- "${cur}"))
+						else
+							COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con}" -- "${cur}"))
+						fi
+						;;
+					esac
+				fi
+				;;
+			show)
+				# knife role show ROLE (options)
+				if [ "${cword}" -eq 3 ];then
+					__get_chef_roles_name
+					COMPREPLY=( $(compgen -W "${__chef_roles_name} -h --help" -- "${cur}"))
+				elif [ "${cword}" -ge 4 -a "${COMP_WORDS[3]}" != "-h" -a "${COMP_WORDS[3]}" != "--help" ];then
+					if [ "${prev}" == "-a" -o \
+					     "${prev}" == "--attribute" ];then
+						COMPREPLY=()
+					else
+						COMPREPLY=( $(compgen -W "-a --attribute ${__knop_srv} ${__knop_cnf} ${__knop_con} ${__knop_prt} -S --field-separator" -- "${cur}"))
+					fi
+				fi
+				;;
+			esac
+			;;
+		search)
+			COMPREPLY=( $(compgen -W "-a --attribute -i --id-only -l --long -r --run-list" -- "${cur}"))
+			;;
+		ssh)
+			# knife ssh QUERY COMMAND (options)
+			if [ "${cword}" -ge 4 ];then
+				COMPREPLY=( $(compgen -W "-C --concurrency -E --environment -u --user -a --attribute -G --ssh-gateway -i --ssh-identity-file -p --ssh-port -t --ssh-timeout -x --ssh-user --tmux-split" -- "${cur}"))
+			fi
+			;;
+		status)
+			# knife status QUERY (options)
+			if [ "${prev}" == "--hide-by-mins" ];then
+				COMPREPLY=()
+			else
+				COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} --hide-by-mins -l --long -m --medium -r --run-list -s --sort-reverse" -- "${cur}"))
+			fi
+			;;
+		user)
+			if [ "${COMP_WORDS[2]}" == "key" ];then
+				if [ "${cword}" -eq 3 ];then
+					COMPREPLY=( $(compgen -W "create delete edit list show" -- "${cur}"))
+				else
+					case "${COMP_WORDS[3]}" in
+					create)
+						;;
+					delete|edit|show)
+						;;
+					list)
+						# knife user key list (options)
+						;;
+					esac
+				fi
+			else
+				case "${COMP_WORDS[2]}" in
+				create)
+					# knife user create USERNAME DISPLAY_NAME FIRST_NAME LAST_NAME EMAIL PASSWORD (options)
+					COMPREPLY=()
+					;;
+				delete)
+					# knife user delete USER (options)
+					__get_chef_users
+					if [ "${cword}" -eq 3 ];then
+						COMPREPLY=( $(compgen -W "${__chef_users} -h --help" -- "${cur}"))
+					else
+						COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} --no-disassociate-user -R --remove-from-admin-groups" -- "${cur}"))
+					fi
+					;;
+				edit)
+					# knife user edit USER (options)
+					__get_chef_users
+					if [ "${cword}" -eq 3 ];then
+						COMPREPLY=( $(compgen -W "${__chef_users} -h --help" -- "${cur}"))
+					else
+						COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} -i --input" -- "${cur}"))
+					fi
+					;;
+				list)
+					# knife user list (options)
+					COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} --defaults ${__knop_prt} --with-uri -y --yes" -- "${cur}"))
+					;;
+				reregister)
+					# knife user reregister USER (options)
+					__get_chef_users
+					if [ "${cword}" -eq 3 ];then
+						COMPREPLY=( $(compgen -W "${__chef_users} -h --help" -- "${cur}"))
+					else
+						COMPREPLY=( $(compgen -W "${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} -S --field-separator" -- "${cur}"))
+					fi
+					;;
+				show)
+					# knife user show USER (options)
+					__get_chef_users
+					if [ "${cword}" -eq 3 ];then
+						COMPREPLY=( $(compgen -W "${__chef_users} -h --help" -- "${cur}"))
+					elif [ "${cword}" -ge 4 ];then
+						if [ "${prev}" == "-a" -o \
+						     "${prev}" == "--attribute" -o \
+						     "${prev}" == "-S" -o \
+						     "${prev}" == "--field-separator" ];then
+							COMPREPLY=()
+						else
+							COMPREPLY=( $(compgen -W "-a --attribute ${__knop_srv} ${__knop_cnf} ${__knop_prt} ${__knop_env} ${__knop_con} -S --field-separator -l --with-orgs" -- "${cur}"))
+						fi
+					fi
+					;;
+				esac
+			fi
+			;;
+		esac
+	fi
+}
+
+_kitchen_completion()
+{
+	local cur prev cword
+	_get_comp_words_by_ref -n : cur prev cword
+
+	COMPREPLY=()
+	__kitchen_instances=""
+
+	__ktopt1="-c --concurrency"
+	__ktopt2="-f --fail-fast --no-fail-fast"
+	__ktopt3="-t --test-base-path"
+	__ktopt4="-l --log-level --log-overwrite --no-log-overwrite --color --no-color"
+	__ktopt5="-D --debug --no-debug"
+
+	if [ -f "kitchen.yml" ]; then
+		__kitchen_yml="kitchen.yml"
+	elif [ -f ".kitchen.yml" ]; then
+		__kitchen_yml=".kitchen.yml"
+	else
+		__kitchen_yml=""
+	fi
+
+	if [ "${cword}" -eq 1 ]; then
+		COMPREPLY=( $(compgen -W "console converge create destroy diagnose doctor exec help init list login package setup test verify version" -- "${cur}"))
+	elif [ "${cword}" -eq 2 ]; then
+		case "${COMP_WORDS[1]}" in
+		converge|create|destroy|diagnose|list|setup|test|verify)
+			__get_kitchen_instances
+			COMPREPLY=( $(compgen -W "${__kitchen_instances} all" -- "${cur}"))
+			;;
+		doctor|exec|login|package)
+			__get_kitchen_instances
+			COMPREPLY=( $(compgen -W "${__kitchen_instances}" -- "${cur}"))
+			;;
+		help)
+			COMPREPLY=( $(compgen -W "console converge create destroy diagnose doctor exec init list login package setup test verify version" -- "${cur}"))
+			;;
+		esac
+	elif [ "${cword}" -ge 3 ]; then
+		if [ "${prev}" == "-c" -o \
+		     "${prev}" == "--concurrency" -o \
+		     "${prev}" == "--command" ]; then
+			COMPREPLY=()
+		elif [ "${prev}" == "-t" -o \
+		       "${prev}" == "--test-base-path" ]; then
+			compopt -o filenames
+			COMPREPLY=( $(compgen -d -- "${cur}"))
+		elif [ "${prev}" == "-l" -o \
+		       "${prev}" == "--log-level" ]; then
+			COMPREPLY=( $(compgen -W "debug info warn error fatal" -- "${cur}"))
+		elif [ "${COMP_WORDS[1]}" == "test" -a "${prev}" == "-d" -o "${prev}" == "--destroy" ]; then
+			COMPREPLY=( $(compgen -W "passing always never" -- "${cur}"))
+		else
+
+			case "${COMP_WORDS[1]}" in
+			converge)
+				COMPREPLY=( $(compgen -W "${__ktopt1} ${__ktopt2} ${__ktopt3} ${__ktopt4} ${__ktopt5}" -- "${cur}"))
+				;;
+			create|destroy|setup)
+				COMPREPLY=( $(compgen -W "${__ktopt1} ${__ktopt2} ${__ktopt3} ${__ktopt4} " -- "${cur}"))
+				;;
+			diagnose)
+				COMPREPLY=( $(compgen -W "${__ktopt3} ${__ktopt4} --loader --no-loader --plugins --no-plugins --instances --no-instances --all --no-all" -- "${cur}"))
+				;;
+			doctor)
+				COMPREPLY=( $(compgen -W "${__ktopt4} -a --all" -- "${cur}"))
+				;;
+			exec)
+				COMPREPLY=( $(compgen -W "${__ktopt4} -c --command" -- "${cur}"))
+				;;
+			init)
+				COMPREPLY=( $(compgen -W "-D --driver -P --provisioner --create-gemfile --no-create-gemfile" -- "${cur}"))
+				;;
+			list)
+				COMPREPLY=( $(compgen -W "${__ktopt4} ${__ktopt5} -b --bare --no-bare -j --json --no-json" -- "${cur}"))
+				;;
+			login|package)
+				COMPREPLY=( $(compgen -W "${__ktopt4}" -- "${cur}"))
+				;;
+			test)
+				COMPREPLY=( $(compgen -W "${__ktopt1} ${__ktopt3} ${__ktopt4} ${__ktopt5} --auto-init --no-auto-init -d --destroy" -- "${cur}"))
+				;;
+			verify)
+				COMPREPLY=( $(compgen -W "${__ktopt1} ${__ktopt2} ${__ktopt3} ${__ktopt4} ${__ktopt5}" -- "${cur}"))
+				;;
+			esac
+		fi
+	fi
+}
+
+_have chef && \
+  complete -F _chef_completion chef
+
+_have cinc && \
+  complete -F _chef_completion cinc
+
+_have knife && \
+  complete -F _knife_completion knife
+
+_have kitchen && \
+  complete -F _kitchen_completion kitchen
+
+clear_cache()
+{
+	__chef_clients=
+	__chef_nodes=
+	__chef_roles=
+	__chef_roles_name=
+	__chef_recipes=
+	__chef_users=
+	__chef_cookbooks=
+	__chef_remote_cookbooks=
+	__chef_environments=
+}
