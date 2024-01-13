@@ -1,3 +1,5 @@
+# CodeWhisperer pre block. Keep at the top of this file.
+[[ -f "${HOME}/Library/Application Support/codewhisperer/shell/bashrc.pre.bash" ]] && builtin source "${HOME}/Library/Application Support/codewhisperer/shell/bashrc.pre.bash"
 # .bashrc
 ### TODO: Work on PATH Variable, as it gets repeated. 
 
@@ -168,3 +170,18 @@ PROMPT_COMMAND="history -a; $PROMPT_COMMAND"
 
 
 export N_PREFIX="$HOME/n"; [[ :$PATH: == *":$N_PREFIX/bin:"* ]] || PATH+=":$N_PREFIX/bin"  # Added by n-install (see http://git.io/n-install-repo).
+
+  [[ -r "/opt/homebrew/etc/profile.d/bash_completion.sh" ]] && . "/opt/homebrew/etc/profile.d/bash_completion.sh"
+eval "$(chef shell-init bash)"
+source $HOME/.configurations/chef-bash-completion
+
+source /Users/kkarov/Code/lecturio/workflows/gitflow-completion.sh
+
+
+# Warpify shell
+#
+#printf '\eP$f{"hook": "SourcedRcFileForWarp", "value": { "shell": "bash" }}\x9c'
+
+# CodeWhisperer post block. Keep at the bottom of this file.
+# [[ -f "${HOME}/Library/Application Support/codewhisperer/shell/bashrc.post.bash" ]] && builtin source "${HOME}/Library/Application Support/codewhisperer/shell/bashrc.post.bash"
+HISTTIMEFORMAT="%F %T "
