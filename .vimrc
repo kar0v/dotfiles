@@ -13,8 +13,6 @@ set encoding=utf-8
 set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 
 set ai
-" Disable compatibility with vi which can cause unexpected issues.
-set nocompatible
 
 " Enable type file detection. Vim will be able to try to detect the type of file in use.
 filetype on
@@ -96,12 +94,14 @@ set wildignore=*.docx,*.jpg,*.png,*.gif,*.pdf,*.pyc,*.exe,*.flv,*.img,*.xlsx
 " Type :PlugInstall to download and install plugins
 call plug#begin('~/.vim/plugged')
 
-
+  
   Plug 'dense-analysis/ale'
   Plug 'joshdick/onedark.vim'
   Plug 'preservim/nerdtree'
   Plug 'sheerun/vim-polyglot'
   Plug 'NLKNguyen/papercolor-theme'
+  Plug 'tmhedberg/SimpylFold'
+
 call plug#end()
 
 " }}}

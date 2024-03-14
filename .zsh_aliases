@@ -23,6 +23,8 @@ alias de="docker exec -it"
 ### AWS
 alias ssprod="aws ssm start-session --profile=prod --target"
 alias ssdev="aws ssm start-session --profile=dev --target"
+alias k3dev="python3 ~/Code/Own/toolbelt/connect-aws-ssm.py --profile=lec-dev"
+alias k3prod="python3 ~/Code/Own/toolbelt/connect-aws-ssm.py --profile=lec-prod"
 
 # dnf package manager
 alias dnfupd='sudo dnf update'
@@ -86,14 +88,14 @@ alias pscpu='ps auxf | sort -nr -k 3'
 
 # yt-dlp
 alias ytaac="yt-dlp --extract-audio --audio-format aac "
-alias ytbest="yt-dlp --extract-audio --audio-format best "
+#alias ytbest="yt-dlp --extract-audio --audio-format best "
 alias ytflac="yt-dlp --extract-audio --audio-format flac "
 alias ytm4a="yt-dlp --extract-audio --audio-format m4a "
 alias ytmp3="yt-dlp --extract-audio --audio-format mp3 "
 alias ytopus="yt-dlp --extract-audio --audio-format opus "
 alias ytvorbis="yt-dlp --extract-audio --audio-format vorbis "
 alias ytwav="yt-dlp --extract-audio --audio-format wav "
-alias ytbest="yt-dlp -f bestvideo+bestaudio "
+alias ytbest="yt-dlp -f bestvideo+bestaudio -P ~/FromYT "
 
 # bare git repo alias for dotfiles
 alias conf="/usr/bin/git --git-dir=$HOME/dotfiles --work-tree=$HOME"

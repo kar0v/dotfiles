@@ -6,6 +6,19 @@ export HISTTIMEFORMAT="%F %T "
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
+# VIM & NEOVIM SETUP
+# 
+export VIMCONFIG=~/.vim
+export VIMDATA=~/.vim
+
+# Use Neovim as "preferred editor"
+export VISUAL=nvim
+
+# Use Neovim instead of Vim or Vi
+alias vim=nvim
+alias vi=nvim
+
+
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
 # to know which specific one was loaded, run: echo $RANDOM_THEME
@@ -73,8 +86,14 @@ zstyle ':omz:update' mode auto      # update automatically without asking
 # Custom plugins may be added to $ZSH_CUSTOM/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git)
+plugins=(
+  zsh-syntax-highlighting
+  zsh-autosuggestions
+  git
+  )
 
+ZSH_AUTOSUGGEST_HIGHLIGHT_STYLE='fg=5'
+bindkey '^ ' autosuggest-accept
 source $ZSH/oh-my-zsh.sh
 
 # User configuration
