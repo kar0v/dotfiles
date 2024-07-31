@@ -21,10 +21,11 @@ alias de="docker exec -it"
 
 
 ### AWS
-alias ssprod="aws ssm start-session --profile=prod --target"
-alias ssdev="aws ssm start-session --profile=dev --target"
-alias k3dev="python3 ~/Code/Own/toolbelt/connect-aws-ssm.py --profile=lec-dev"
-alias k3prod="python3 ~/Code/Own/toolbelt/connect-aws-ssm.py --profile=lec-prod"
+alias lec-healer='eval "$(aws configure export-credentials --profile lec-healer --format env)"'
+alias lec-healer-content='eval "$(aws configure export-credentials --profile lec-healer-content --format env)"'
+alias lec-dev='eval "$(aws configure export-credentials --profile lec-dev --format env)"'
+alias lec-prod='eval "$(aws configure export-credentials --profile lec-prod --format env)"'
+alias lec-sandbox='eval "$(aws configure export-credentials --profile lec-sandbox --format env)"'
 
 # dnf package manager
 alias dnfupd='sudo dnf update'
@@ -101,3 +102,6 @@ alias ytbest="yt-dlp -f bestvideo+bestaudio -P ~/FromYT "
 alias conf="/usr/bin/git --git-dir=$HOME/dotfiles --work-tree=$HOME"
 
 alias tf="terraform"
+
+alias history="history -i"
+

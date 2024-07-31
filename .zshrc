@@ -3,20 +3,24 @@
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export HISTTIMEFORMAT="%F %T "
+export HIST_STAMPS="yyyy/mm/dd"
+export AWS_REGION=eu-central-1
+
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
 
 # VIM & NEOVIM SETUP
 # 
-export VIMCONFIG=~/.vim
-export VIMDATA=~/.vim
+#export XDG_CONFIG_HOME="~/.config"
+#export VIMCONFIG="~/.vim"
+#export VIMDATA="~/.vim"
 
 # Use Neovim as "preferred editor"
-export VISUAL=nvim
+#export VISUAL=nvim
 
 # Use Neovim instead of Vim or Vi
-alias vim=nvim
-alias vi=nvim
+#alias vim=nvim
+#alias vi=nvim
 
 
 # Set name of the theme to load --- if set to "random", it will
@@ -129,11 +133,6 @@ complete -C $(which aws_completer) aws
     compinit
   fi
 
-# Created by `pipx` on 2023-08-01 11:47:30
-export PATH="$PATH:/Users/kkarov/.local/bin"
-
-
-
 source ~/.zsh_aliases
 
 
@@ -150,8 +149,12 @@ if [ -f /Users/kkarov/Code/lecturio/workflows/gitflow-completion.sh ]; then
 
 # CodeWhisperer post block. Keep at the bottom of this file.
 
-# [[ -f "${HOME}/Library/Application Support/codewhisperer/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/codewhisperer/shell/zshrc.post.zsh"
+# export AWS_PAGER=""
 
-export AWS_PAGER=""
+# CodeWhisperer post block. Keep at the bottom of this file.
+[[ -f "${HOME}/Library/Application Support/codewhisperer/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/codewhisperer/shell/zshrc.post.zsh"
 
-
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
