@@ -1,27 +1,13 @@
-# CodeWhisperer pre block. Keep at the top of this file.
-[[ -f "${HOME}/Library/Application Support/codewhisperer/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/codewhisperer/shell/zshrc.pre.zsh"
+# Amazon Q pre block. Keep at the top of this file.
+[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh"
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export HISTTIMEFORMAT="%F %T "
 export HIST_STAMPS="yyyy/mm/dd"
 export AWS_REGION=eu-central-1
-
+export AWS_PAGER=""
 # Path to your oh-my-zsh installation.
 export ZSH="$HOME/.oh-my-zsh"
-
-# VIM & NEOVIM SETUP
-# 
-#export XDG_CONFIG_HOME="~/.config"
-#export VIMCONFIG="~/.vim"
-#export VIMDATA="~/.vim"
-
-# Use Neovim as "preferred editor"
-#export VISUAL=nvim
-
-# Use Neovim instead of Vim or Vi
-#alias vim=nvim
-#alias vi=nvim
-
 
 # Set name of the theme to load --- if set to "random", it will
 # load a random theme each time oh-my-zsh is loaded, in which case,
@@ -149,12 +135,16 @@ if [ -f /Users/kkarov/Code/lecturio/workflows/gitflow-completion.sh ]; then
 
 # CodeWhisperer post block. Keep at the bottom of this file.
 
-# export AWS_PAGER=""
-
-# CodeWhisperer post block. Keep at the bottom of this file.
-[[ -f "${HOME}/Library/Application Support/codewhisperer/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/codewhisperer/shell/zshrc.post.zsh"
-
-export NVM_DIR="$HOME/.nvm"
+# export AWS_PAGER=""export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
 export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
+
+# Amazon Q post block. Keep at the bottom of this file.
+[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"
+
+# The next line updates PATH for the Google Cloud SDK.
+if [ -f '/Users/kkarov/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/kkarov/Downloads/google-cloud-sdk/path.zsh.inc'; fi
+
+# The next line enables shell command completion for gcloud.
+if [ -f '/Users/kkarov/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/kkarov/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
