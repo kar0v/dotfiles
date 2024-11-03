@@ -12,7 +12,9 @@ set encoding=utf-8
 
 set listchars=eol:¬,tab:>·,trail:~,extends:>,precedes:<,space:␣
 
-set ai
+set autoindent
+set nrformats= 
+" # this makes use of decimal numbers instead of octal ones. 
 
 " Enable type file detection. Vim will be able to try to detect the type of file in use.
 filetype on
