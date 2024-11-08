@@ -11,3 +11,22 @@ function logg() {
         --bind 'ctrl-e:execute(echo {} | grep -o "[a-f0-9]\{7\}" | head -1 | xargs -I % sh -c "gh browse %")'
 }
 
+CODE_DIR="${HOME}/dev"
+function repo() {
+  export repo=$(fd . ${HOME}/dev --type=directory --max-depth=1 --color always| awk -F "/" '{print $5}' | fzf --ansi --preview 'onefetch /home/decoder/dev/{1}' --preview-window up)
+    if [[ -z "$repo" ]]; then
+        echo "Repository not found"
+      else
+        echo "Repository found locally, entering"
+        cd ${HOME}/dev/$repo
+        if [[ -d .git ]]; then
+          echo "Fetching origin"
+          git fetch origin
+          onefetch
+        fi
+          create_tmux_session "${HOME}/dev/$repo"
+    fi
+}
+
+
+

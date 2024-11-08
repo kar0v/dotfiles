@@ -1,5 +1,10 @@
 # Amazon Q pre block. Keep at the top of this file.
 [[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh"
+HOMEBREW_NO_AUTO_UPDATE=false
+HOMEBREW_NO_ENV_HINTS=false
+# Add functions
+
+[[ -f "${HOME}"/.zsh_functions ]] && . ~/.zsh_functions
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export HISTTIMEFORMAT="%F %T "
