@@ -30,3 +30,6 @@ export PATH
 
 # Amazon Q post block. Keep at the bottom of this file.
 [[ -f "${HOME}/Library/Application Support/amazon-q/shell/zprofile.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zprofile.post.zsh"
+
+# Created by `pipx` on 2024-11-23 13:00:36
+export PATH="$PATH:/Users/karov/.local/bin"

@@ -1,10 +1,14 @@
 # Amazon Q pre block. Keep at the top of this file.
 [[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh"
-HOMEBREW_NO_AUTO_UPDATE=false
-HOMEBREW_NO_ENV_HINTS=false
+HOMEBREW_NO_ENV_HINTS=
+HOMEBREW_NO_AUTO_UPDATE=1
+# LOAD 
+eval $(keychain --eval karov > /dev/null 2>&1)
+
 # Add functions
 
 [[ -f "${HOME}"/.zsh_functions ]] && . ~/.zsh_functions
+
 # If you come from bash you might have to change your $PATH.
 # export PATH=$HOME/bin:/usr/local/bin:$PATH
 export HISTTIMEFORMAT="%F %T "
@@ -21,23 +25,10 @@ export ZSH="$HOME/.oh-my-zsh"
 ZSH_THEME="cobalt2"
 #ZSH_THEME="amuse"
 
-# Set list of themes to pick from when loading at random
-# Setting this variable when ZSH_THEME=random will cause zsh to load
-# a theme from this variable instead of looking in $ZSH/themes/
-# If set to an empty array, this variable will have no effect.
-# ZSH_THEME_RANDOM_CANDIDATES=( "robbyrussell" "agnoster" )
-
-# Uncomment the following line to use case-sensitive completion.
-# CASE_SENSITIVE="true"
-
-# Uncomment the following line to use hyphen-insensitive completion.
-# Case-sensitive completion must be off. _ and - will be interchangeable.
-# HYPHEN_INSENSITIVE="true"
-
 # Uncomment one of the following lines to change the auto-update behavior
 # zstyle ':omz:update' mode disabled  # disable automatic updates
-zstyle ':omz:update' mode auto      # update automatically without asking
-# zstyle ':omz:update' mode reminder  # just remind me to update when it's time
+# zstyle ':omz:update' mode auto      # update automatically without asking
+zstyle ':omz:update' mode reminder  # just remind me to update when it's time
 
 # Uncomment the following line to change how often to auto-update (in days).
 # zstyle ':omz:update' frequency 13
@@ -140,16 +131,19 @@ if [ -f /Users/kkarov/Code/lecturio/workflows/gitflow-completion.sh ]; then
 
 # CodeWhisperer post block. Keep at the bottom of this file.
 
-# export AWS_PAGER=""export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
-export PATH="/opt/homebrew/opt/openjdk/bin:$PATH"
 
-# Amazon Q post block. Keep at the bottom of this file.
-[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"
+#### READMES
+# brew install lazygit zoxide bpytop tmux fzf entr just jq task tldr knqyf263/pet/pet gh
+# gh auth login
+# gh extension install github/gh-copilot --force
+# gh repo create my-new-repo --public --description "My new repository"
+# gh gist create my_script.sh --public --desc "A simple bash script"
+# gh copilot suggest "Install git"
+# gh copilot explain "traceroute github.com"
+#
 
-# The next line updates PATH for the Google Cloud SDK.
-if [ -f '/Users/kkarov/Downloads/google-cloud-sdk/path.zsh.inc' ]; then . '/Users/kkarov/Downloads/google-cloud-sdk/path.zsh.inc'; fi
 
-# The next line enables shell command completion for gcloud.
-if [ -f '/Users/kkarov/Downloads/google-cloud-sdk/completion.zsh.inc' ]; then . '/Users/kkarov/Downloads/google-cloud-sdk/completion.zsh.inc'; fi
+# Created by `pipx` on 2024-11-23 13:00:36
+export PATH="$PATH:/Users/karov/.local/bin"
+
+export PATH="/opt/homebrew/opt/mysql-client/bin:$PATH"
